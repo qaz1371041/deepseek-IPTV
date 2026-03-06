@@ -1,9 +1,16 @@
 更新日期,#genre#
-📺┃广东频道,#genre#
-🍓┃湾区频道,#genre#
-📠┃央视频道,#genre#
-🐻┃卫视频道,#genre#
-🐶┃咪咕频道,#genre#
-🐟┃少儿频道,#genre#
-🐶┃影视频道,#genre#
+📺央视频道,#genre#
+💰央视付费频道,#genre#
+🍉┃咪咕频道,#genre#
+☘️湖北频道,#genre#
+📡卫视频道,#genre#
+🌊港·澳·台,#genre#
+🎬电影频道,#genre#
+🏍咪咕体育,#genre#
+🎥咪咕直播,#genre#
+🏀体育频道,#genre#
+🏛经典剧场,#genre#
+体育-昨天,#genre#
+体育-今天,#genre#
+体育-明天,#genre#
 
