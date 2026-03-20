@@ -2493,8 +2493,14 @@ http://[2409:8087:1a0b:df::4014]:80/ottrrs.hl.chinamobile.com/TVOD/88888888/224/
 http://[2409:8087:2001:20:2800:0:df6e:eb08]/ott.mobaibox.com/PLTV/3/224/3221227520/index.m3u8$IPV6•线路7
 #EXTINF:-1 tvg-id="8" tvg-name="黑莓电影" tvg-logo="./pic/logos黑莓电影.png" group-title="🎬电影频道",黑莓电影
 http://[2409:8087:1a0b:df::4014]:80/ottrrs.hl.chinamobile.com/PLTV/88888888/224/3221225743/index.m3u8$IPV6•线路8
+#EXTINF:-1 tvg-id="1" tvg-name="咪咕直播1" tvg-logo="./pic/logos咪咕直播1.png" group-title="🎥咪咕直播",咪咕直播1
+http://[2409:8087:1a01:df::404d]/ottrrs.hl.chinamobile.com/PLTV/88888888/224/3221226124/index.m3u8$IPV6
 #EXTINF:-1 tvg-id="1" tvg-name="咪咕直播2" tvg-logo="./pic/logos咪咕直播2.png" group-title="🎥咪咕直播",咪咕直播2
 http://[2409:8087:1a01:df::403b]/ottrrs.hl.chinamobile.com/PLTV/88888888/224/3221226147/index.m3u8$IPV6
+#EXTINF:-1 tvg-id="1" tvg-name="咪咕直播3" tvg-logo="./pic/logos咪咕直播3.png" group-title="🎥咪咕直播",咪咕直播3
+http://[2409:8087:1a01:df::4033]/ottrrs.hl.chinamobile.com/PLTV/88888888/224/3221226398/index.m3u8$IPV6
+#EXTINF:-1 tvg-id="1" tvg-name="咪咕直播4" tvg-logo="./pic/logos咪咕直播4.png" group-title="🎥咪咕直播",咪咕直播4
+http://[2409:8087:1a01:df::402a]/ottrrs.hl.chinamobile.com/PLTV/88888888/224/3221226469/index.m3u8$IPV6
 #EXTINF:-1 tvg-id="1" tvg-name="咪咕直播5" tvg-logo="./pic/logos咪咕直播5.png" group-title="🎥咪咕直播",咪咕直播5
 http://[2409:8087:1a01:df::4046]/ottrrs.hl.chinamobile.com/PLTV/88888888/224/3221226472/index.m3u8$IPV6
 #EXTINF:-1 tvg-id="1" tvg-name="CCTV-5" tvg-logo="./pic/logosCCTV-5.png" group-title="🏀体育频道",CCTV-5
