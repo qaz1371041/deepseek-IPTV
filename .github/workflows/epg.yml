@@ -2,59 +2,69 @@ name: EPG Update
 
 on:
   schedule:
-    - cron: '55 0 */2 * *'   # 每2天凌晨00:55执行（UTC时间）
-  workflow_dispatch:          # 允许手动触发
+    - cron: '55 0 */2 * *'   # 每2天凌晨00:55执行（UTC）
+  workflow_dispatch:
 
-# 工作流所需的权限（必须设置）
 permissions:
-  actions: write    # 用于删除旧的工作流运行
-  contents: write   # 用于提交代码
+  actions: write
+  contents: write
 
-# 可配置的环境变量
 env:
-  EPG_URL: "http://exml.51zmt.top:11111/download2.php?f=e.xml"   # EPG 下载地址
+  # 主 EPG 源（可修改）
+  PRIMARY_URL: "http://exml.51zmt.top:11111/download2.php?f=e.xml"
+  # 备用 EPG 源
+  FALLBACK_URL: "http://epg.51zmt.top:8000/e.xml"
   OUTPUT_DIR: "output"
   OUTPUT_FILE: "output/epg.xml"
 
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
-      # 检出仓库代码
       - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0   # 获取完整历史，以便比较哈希
 
-      # 配置 Git 用户信息
       - name: Set up Git user
         run: |
           git config --local user.name "github-actions[bot]"
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
 
-      # 创建输出目录
       - name: Create output directory
         run: mkdir -p ${{ env.OUTPUT_DIR }}
 
-      # 下载 EPG 文件（带重试、超时和详细日志）
+      # ---- 智能下载：主源失败则自动切换备用源 ----
       - name: Download EPG File
         run: |
           set -e
-          echo "Downloading EPG from ${{ env.EPG_URL }} ..."
-          # 使用 curl 下载，增加失败重试，连接超时10秒，总超时90秒
-          curl -L --connect-timeout 10 --max-time 90 --retry 3 --retry-delay 5 \
-            --fail -o "${{ env.OUTPUT_FILE }}" "${{ env.EPG_URL }}" || {
-            echo "Download failed. Please check URL or network."
-            exit 1
+          download_with_retry() {
+            local url=$1
+            local output=$2
+            echo "Trying $url ..."
+            curl -L --connect-timeout 10 --max-time 90 --retry 3 --retry-delay 5 --fail -o "$output" "$url"
           }
-          # 验证下载文件非空
-          if [ ! -s "${{ env.OUTPUT_FILE }}" ]; then
-            echo "Error: Downloaded file is empty."
+
+          if download_with_retry "$PRIMARY_URL" "$OUTPUT_FILE"; then
+            echo "Downloaded from primary source."
+          else
+            echo "Primary source failed, trying fallback..."
+            if download_with_retry "$FALLBACK_URL" "$OUTPUT_FILE"; then
+              echo "Downloaded from fallback source."
+            else
+              echo "All sources failed." >&2
+              exit 1
+            fi
+          fi
+
+          # 验证文件非空
+          if [ ! -s "$OUTPUT_FILE" ]; then
+            echo "Error: Downloaded file is empty." >&2
             exit 1
           fi
-          echo "Download successful. File size: $(stat -c%s ${{ env.OUTPUT_FILE }}) bytes"
-          # 可选：显示前几行，确认格式
-          head -n 3 "${{ env.OUTPUT_FILE }}" || true
+          echo "File size: $(stat -c%s $OUTPUT_FILE) bytes"
+          head -n 2 "$OUTPUT_FILE" || true   # 打印前两行帮助调试
 
-      # 计算当前文件的 SHA-256 哈希值
+      # ---- 计算哈希 ----
       - name: Calculate SHA-256 hash
         id: current_hash
         run: |
@@ -62,38 +72,35 @@ jobs:
           echo "hash=$HASH" >> "$GITHUB_ENV"
           echo "Current hash: $HASH"
 
-      # 获取上次提交中该文件的哈希值（如果存在）
+      # ---- 获取上次提交中的哈希 ----
       - name: Get previous SHA-256 hash
         id: previous_hash
         run: |
-          # 检查文件是否存在于上次提交中
-          if git rev-parse HEAD >/dev/null 2>&1 && git show HEAD:${{ env.OUTPUT_FILE }} >/dev/null 2>&1; then
+          if git show HEAD:${{ env.OUTPUT_FILE }} >/dev/null 2>&1; then
             PREV_HASH=$(git show HEAD:${{ env.OUTPUT_FILE }} | sha256sum | awk '{print $1}')
             echo "previous_hash=$PREV_HASH" >> "$GITHUB_ENV"
             echo "Previous hash: $PREV_HASH"
           else
             echo "previous_hash=none" >> "$GITHUB_ENV"
-            echo "File does not exist in previous commit. Will be treated as new."
+            echo "No previous file found."
           fi
 
-      # 比较哈希值，如有变化则提交推送
+      # ---- 提交并推送（如有变化） ----
       - name: Commit and push if changed
         run: |
           if [ "${{ env.hash }}" != "${{ env.previous_hash }}" ]; then
-            echo "Changes detected. Committing and pushing..."
+            echo "Changes detected, preparing commit..."
             git add ${{ env.OUTPUT_FILE }}
-            git commit -m "Auto-update EPG data"
-            # 自动获取当前分支名（main 或 master）
-            BRANCH=${GITHUB_REF#refs/heads/}
-            git push origin HEAD:$BRANCH
-            echo "Push to $BRANCH completed."
+            git commit -m "Auto-update EPG data ($(date -u '+%Y-%m-%d %H:%M:%S UTC'))"
+            # 拉取最新代码避免冲突
+            git pull --rebase origin ${{ github.ref_name }} || true
+            git push origin ${{ github.ref_name }}
+            echo "Push successful."
           else
-            echo "No changes detected, skipping commit."
+            echo "No changes, skip commit."
           fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-      # ---------- 清理旧的工作流运行，只保留最新5条 ----------
+      # ---- 清理旧的工作流运行（保留最近5条） ----
       - name: Clean up old workflow runs
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -101,37 +108,34 @@ jobs:
           set -e
           REPO="${{ github.repository }}"
           WORKFLOW_ID="${{ github.workflow_id }}"
-          
-          echo "Fetching completed workflow runs for workflow ID: $WORKFLOW_ID"
+          CURRENT_RUN_ID="${{ github.run_id }}"
+
+          echo "Fetching completed runs for workflow ID: $WORKFLOW_ID"
           response=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
             "https://api.github.com/repos/$REPO/actions/workflows/$WORKFLOW_ID/runs?per_page=100&status=completed")
-          
-          # 检查 API 是否返回错误
-          if echo "$response" | jq -e '.message' > /dev/null 2>&1; then
-            echo "API error: $(echo "$response" | jq -r '.message')"
+
+          if echo "$response" | jq -e '.message' >/dev/null 2>&1; then
+            echo "API error: $(echo "$response" | jq -r '.message')" >&2
             exit 1
           fi
-          
-          # 提取运行ID列表（跳过最近5条）
-          run_ids=$(echo "$response" | jq -r '.workflow_runs // [] | sort_by(.created_at) | reverse | .[5:][] | .id')
-          
+
+          # 提取所有完成的运行ID，按创建时间倒序，跳过最新5条，且排除当前运行
+          run_ids=$(echo "$response" | jq -r '.workflow_runs // [] | sort_by(.created_at) | reverse | .[5:][] | .id' | grep -v "^$CURRENT_RUN_ID$" || true)
+
           if [ -z "$run_ids" ]; then
             echo "No old runs to delete."
             exit 0
           fi
-          
+
           echo "Runs to delete:"
           echo "$run_ids"
-          
-          # 遍历并删除
+
           for id in $run_ids; do
-            echo "Deleting run ID: $id"
+            echo "Deleting run $id ..."
             curl -s -X DELETE -H "Authorization: token $GITHUB_TOKEN" \
-              "https://api.github.com/repos/$REPO/actions/runs/$id" || {
-              echo "Failed to delete run $id"
-              exit 1
-            }
+              "https://api.github.com/repos/$REPO/actions/runs/$id"
+            echo "Deleted."
             sleep 1
           done
-          
-          echo "Cleanup completed. Kept the latest 5 runs."
+
+          echo "Cleanup finished. Kept the latest 5 runs (excluding current)."
