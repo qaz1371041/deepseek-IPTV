@@ -10,6 +10,11 @@ permissions:
   actions: write    # 用于删除旧的工作流运行
   contents: write   # 用于提交代码
 
+env:
+  EPG_URL: "http://exml.51zmt.top:11111/download2.php?f=e.xml"   # EPG 下载地址，可修改
+  OUTPUT_DIR: "output"
+  OUTPUT_FILE: "output/epg.xml"
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -18,7 +23,7 @@ jobs:
       # 检出仓库代码
       - uses: actions/checkout@v3
 
-      # 配置 Git 用户信息，以便提交
+      # 配置 Git 用户信息
       - name: Set up Git user
         run: |
           git config --local user.name "github-actions[bot]"
@@ -26,51 +31,55 @@ jobs:
 
       # 创建输出目录
       - name: Create output directory
-        run: mkdir -p output
+        run: mkdir -p ${{ env.OUTPUT_DIR }}
 
-      # 下载 EPG 文件（使用 curl 并配置超时与重试）
+      # 下载 EPG 文件（带重试和超时）
       - name: Download EPG File
         run: |
-          URL="http://exml.51zmt.top:11111/download2.php?f=e.xml"
-          OUTPUT="output/epg.xml"
-          echo "Downloading EPG from $URL ..."
+          set -e
+          echo "Downloading EPG from ${{ env.EPG_URL }} ..."
           curl -L --connect-timeout 10 --max-time 60 --retry 3 --retry-delay 5 \
-            --fail -o "$OUTPUT" "$URL"
-          if [ ! -s "$OUTPUT" ]; then
+            --fail -o "${{ env.OUTPUT_FILE }}" "${{ env.EPG_URL }}"
+          if [ ! -s "${{ env.OUTPUT_FILE }}" ]; then
             echo "Error: Downloaded file is empty."
             exit 1
           fi
-          echo "EPG file downloaded successfully."
+          echo "EPG file downloaded successfully. File size: $(stat -c%s ${{ env.OUTPUT_FILE }}) bytes"
 
       # 计算当前文件的 SHA-256 哈希值
       - name: Calculate SHA-256 hash of output/epg.xml
-        id: calculate_hash
+        id: current_hash
         run: |
-          echo "hash=$(sha256sum output/epg.xml | awk '{print $1}')" >> "$GITHUB_ENV"
+          echo "hash=$(sha256sum ${{ env.OUTPUT_FILE }} | awk '{print $1}')" >> "$GITHUB_ENV"
+          echo "Current hash: ${{ env.hash }}"
 
       # 获取上次提交中该文件的哈希值（如果存在）
       - name: Get previous SHA-256 hash from last commit
-        id: get_previous_hash
+        id: previous_hash
         run: |
-          if git show HEAD:output/epg.xml &>/dev/null; then
-            echo "previous_hash=$(git show HEAD:output/epg.xml | sha256sum | awk '{print $1}')" >> "$GITHUB_ENV"
+          if git show HEAD:${{ env.OUTPUT_FILE }} >/dev/null 2>&1; then
+            prev_hash=$(git show HEAD:${{ env.OUTPUT_FILE }} | sha256sum | awk '{print $1}')
+            echo "previous_hash=$prev_hash" >> "$GITHUB_ENV"
+            echo "Previous hash: $prev_hash"
           else
             echo "previous_hash=none" >> "$GITHUB_ENV"
+            echo "File does not exist in previous commit."
           fi
 
       # 比较哈希值，如有变化则提交推送
       - name: Compare hashes and update if different
         run: |
           if [ "${{ env.hash }}" != "${{ env.previous_hash }}" ]; then
-            git add output/epg.xml
+            echo "Changes detected. Committing and pushing..."
+            git add ${{ env.OUTPUT_FILE }}
             git commit -m "Auto-update epg files."
-            git push origin main
-            echo "Changes detected and pushed."
+            # 获取默认分支名（可能是 main 或 master）
+            DEFAULT_BRANCH=$(git remote show origin | grep 'HEAD branch' | cut -d' ' -f5)
+            git push origin HEAD:$DEFAULT_BRANCH
+            echo "Changes pushed to $DEFAULT_BRANCH."
           else
-            echo "No changes detected in output/epg.xml, skipping commit."
+            echo "No changes detected in ${{ env.OUTPUT_FILE }}, skipping commit."
           fi
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       # ---------- 清理旧的工作流运行，只保留最新5条 ----------
       - name: Clean up old workflow runs
