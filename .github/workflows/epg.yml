@@ -2,10 +2,10 @@ name: EPG Update
 
 on:
   schedule:
-    - cron: '55 0 */2 * *'   # 每2天凌晨00点55分执行（UTC时间）
+    - cron: '55 0 */2 * *'   # 每2天凌晨00:55执行（UTC时间）
   workflow_dispatch:          # 允许手动触发
 
-# 设置工作流所需的权限
+# 工作流所需的权限
 permissions:
   actions: write    # 用于删除旧的工作流运行
   contents: write   # 用于提交代码
@@ -28,9 +28,19 @@ jobs:
       - name: Create output directory
         run: mkdir -p output
 
-      # 下载 EPG 文件
+      # 下载 EPG 文件（使用 curl 并配置超时与重试）
       - name: Download EPG File
-        run: wget http://epg.51zmt.top:8000/e.xml -O output/epg.xml
+        run: |
+          URL="http://exml.51zmt.top:11111/download2.php?f=e.xml"
+          OUTPUT="output/epg.xml"
+          echo "Downloading EPG from $URL ..."
+          curl -L --connect-timeout 10 --max-time 60 --retry 3 --retry-delay 5 \
+            --fail -o "$OUTPUT" "$URL"
+          if [ ! -s "$OUTPUT" ]; then
+            echo "Error: Downloaded file is empty."
+            exit 1
+          fi
+          echo "EPG file downloaded successfully."
 
       # 计算当前文件的 SHA-256 哈希值
       - name: Calculate SHA-256 hash of output/epg.xml
@@ -55,6 +65,7 @@ jobs:
             git add output/epg.xml
             git commit -m "Auto-update epg files."
             git push origin main
+            echo "Changes detected and pushed."
           else
             echo "No changes detected in output/epg.xml, skipping commit."
           fi
