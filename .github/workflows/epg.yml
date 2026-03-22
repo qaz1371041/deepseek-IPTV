@@ -1,29 +1,14 @@
 name: EPG Update
-
 on:
   schedule:
-    - cron: '55 0 */2 * *'   # 每2天凌晨00:55执行（UTC）
-  workflow_dispatch:
-
-permissions:
-  actions: write
-  contents: write
-
-env:
-  # 主 EPG 源（可修改）
-  PRIMARY_URL: "http://exml.51zmt.top:11111/download2.php?f=e.xml"
-  # 备用 EPG 源
-  FALLBACK_URL: "http://epg.51zmt.top:8000/e.xml"
-  OUTPUT_DIR: "output"
-  OUTPUT_FILE: "output/epg.xml"
+    - cron: '55 0 */2 * *'   # 每2天凌晨00:55（UTC）执行
+  workflow_dispatch:         # 支持手动触发
 
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0   # 获取完整历史，以便比较哈希
 
       - name: Set up Git user
         run: |
@@ -31,111 +16,50 @@ jobs:
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
 
       - name: Create output directory
-        run: mkdir -p ${{ env.OUTPUT_DIR }}
+        run: mkdir -p output
 
-      # ---- 智能下载：主源失败则自动切换备用源 ----
-      - name: Download EPG File
+      - name: Download EPG file
+        run: wget http://epg.51zmt.top:8000/e.xml -O /tmp/epg.xml
+
+      - name: Generate timestamp
+        id: timestamp
+        run: echo "time=$(date -u +'%Y%m%d_%H%M%S')" >> "$GITHUB_ENV"
+
+      - name: Check and rotate files
         run: |
-          set -e
-          download_with_retry() {
-            local url=$1
-            local output=$2
-            echo "Trying $url ..."
-            curl -L --connect-timeout 10 --max-time 90 --retry 3 --retry-delay 5 --fail -o "$output" "$url"
-          }
+          # 进入 output 目录
+          cd output
 
-          if download_with_retry "$PRIMARY_URL" "$OUTPUT_FILE"; then
-            echo "Downloaded from primary source."
-          else
-            echo "Primary source failed, trying fallback..."
-            if download_with_retry "$FALLBACK_URL" "$OUTPUT_FILE"; then
-              echo "Downloaded from fallback source."
-            else
-              echo "All sources failed." >&2
-              exit 1
-            fi
+          # 获取所有 epg_*.xml 文件，按文件名排序（时间戳格式 yyyymmdd_hhmmss）
+          files=( $(ls -1 epg_*.xml 2>/dev/null | sort) )
+          latest_file=""
+          if [ ${#files[@]} -gt 0 ]; then
+            latest_file="${files[-1]}"
           fi
 
-          # 验证文件非空
-          if [ ! -s "$OUTPUT_FILE" ]; then
-            echo "Error: Downloaded file is empty." >&2
-            exit 1
-          fi
-          echo "File size: $(stat -c%s $OUTPUT_FILE) bytes"
-          head -n 2 "$OUTPUT_FILE" || true   # 打印前两行帮助调试
-
-      # ---- 计算哈希 ----
-      - name: Calculate SHA-256 hash
-        id: current_hash
-        run: |
-          HASH=$(sha256sum ${{ env.OUTPUT_FILE }} | awk '{print $1}')
-          echo "hash=$HASH" >> "$GITHUB_ENV"
-          echo "Current hash: $HASH"
-
-      # ---- 获取上次提交中的哈希 ----
-      - name: Get previous SHA-256 hash
-        id: previous_hash
-        run: |
-          if git show HEAD:${{ env.OUTPUT_FILE }} >/dev/null 2>&1; then
-            PREV_HASH=$(git show HEAD:${{ env.OUTPUT_FILE }} | sha256sum | awk '{print $1}')
-            echo "previous_hash=$PREV_HASH" >> "$GITHUB_ENV"
-            echo "Previous hash: $PREV_HASH"
-          else
-            echo "previous_hash=none" >> "$GITHUB_ENV"
-            echo "No previous file found."
-          fi
-
-      # ---- 提交并推送（如有变化） ----
-      - name: Commit and push if changed
-        run: |
-          if [ "${{ env.hash }}" != "${{ env.previous_hash }}" ]; then
-            echo "Changes detected, preparing commit..."
-            git add ${{ env.OUTPUT_FILE }}
-            git commit -m "Auto-update EPG data ($(date -u '+%Y-%m-%d %H:%M:%S UTC'))"
-            # 拉取最新代码避免冲突
-            git pull --rebase origin ${{ github.ref_name }} || true
-            git push origin ${{ github.ref_name }}
-            echo "Push successful."
-          else
-            echo "No changes, skip commit."
-          fi
-
-      # ---- 清理旧的工作流运行（保留最近5条） ----
-      - name: Clean up old workflow runs
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          set -e
-          REPO="${{ github.repository }}"
-          WORKFLOW_ID="${{ github.workflow_id }}"
-          CURRENT_RUN_ID="${{ github.run_id }}"
-
-          echo "Fetching completed runs for workflow ID: $WORKFLOW_ID"
-          response=$(curl -s -H "Authorization: token $GITHUB_TOKEN" \
-            "https://api.github.com/repos/$REPO/actions/workflows/$WORKFLOW_ID/runs?per_page=100&status=completed")
-
-          if echo "$response" | jq -e '.message' >/dev/null 2>&1; then
-            echo "API error: $(echo "$response" | jq -r '.message')" >&2
-            exit 1
-          fi
-
-          # 提取所有完成的运行ID，按创建时间倒序，跳过最新5条，且排除当前运行
-          run_ids=$(echo "$response" | jq -r '.workflow_runs // [] | sort_by(.created_at) | reverse | .[5:][] | .id' | grep -v "^$CURRENT_RUN_ID$" || true)
-
-          if [ -z "$run_ids" ]; then
-            echo "No old runs to delete."
+          # 比较新下载的文件与最新保留的文件内容是否相同
+          if [ -n "$latest_file" ] && cmp -s "/tmp/epg.xml" "$latest_file"; then
+            echo "No changes detected, skipping commit."
             exit 0
           fi
 
-          echo "Runs to delete:"
-          echo "$run_ids"
+          # 生成带时间戳的新文件名
+          new_file="epg_${{ env.time }}.xml"
+          cp "/tmp/epg.xml" "$new_file"
 
-          for id in $run_ids; do
-            echo "Deleting run $id ..."
-            curl -s -X DELETE -H "Authorization: token $GITHUB_TOKEN" \
-              "https://api.github.com/repos/$REPO/actions/runs/$id"
-            echo "Deleted."
-            sleep 1
-          done
+          # 保留最近5个文件（按文件名排序）
+          all_files=( $(ls -1 epg_*.xml 2>/dev/null | sort) )
+          if [ ${#all_files[@]} -gt 5 ]; then
+            remove_count=$(( ${#all_files[@]} - 5 ))
+            for ((i=0; i<remove_count; i++)); do
+              rm -f "${all_files[i]}"
+            done
+          fi
 
-          echo "Cleanup finished. Kept the latest 5 runs (excluding current)."
+          # 返回上层目录
+          cd ..
+
+          # 提交所有更改（新增和删除的文件）
+          git add output/
+          git commit -m "Auto-update EPG: add $new_file, keep latest 5"
+          git push origin main
