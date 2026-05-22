@@ -16,15 +16,15 @@ jobs:
 
     steps:
     - name: Checkout repository
-      uses: actions/checkout@v3
+      uses: actions/checkout@v5   # 升级到 v5，支持 Node.js 24
 
     - name: Set up Python
-      uses: actions/setup-python@v4
+      uses: actions/setup-python@v5   # 升级到 v5，支持 Node.js 24
       with:
         python-version: '3.10'
 
     - name: Cache dependencies
-      uses: actions/cache@v4
+      uses: actions/cache@v4   # 当前最新 v4 已兼容 Node.js 24，无需改动
       with:
         path: ~/.cache/pip
         key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
@@ -59,7 +59,7 @@ jobs:
     # 清理旧运行记录，仅保留最近5条
     - name: Cleanup old workflow runs (keep only 5)
       if: always()  # 即使前置步骤失败也执行清理
-      uses: actions/github-script@v6
+      uses: actions/github-script@v8   # 升级到 v8，支持 Node.js 24
       with:
         script: |
           const owner = context.repo.owner;
