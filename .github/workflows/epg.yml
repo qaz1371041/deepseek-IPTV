@@ -1,8 +1,14 @@
 name: EPG Update
+
 on:
   schedule:
-    - cron: '55 0 */2 * *'   # 每2天凌晨00:55（UTC）执行
-  workflow_dispatch:         # 支持手动触发
+    # 每天北京时间早上6点执行（UTC 22:00）
+    - cron: '0 22 * * *'
+  workflow_dispatch:  # 允许手动触发
+
+permissions:
+  contents: write   # 用于提交推送文件
+  actions: write    # 用于删除旧的工作流运行记录
 
 jobs:
   build:
@@ -18,48 +24,64 @@ jobs:
       - name: Create output directory
         run: mkdir -p output
 
-      - name: Download EPG file
-        run: wget http://epg.51zmt.top:8000/e.xml -O /tmp/epg.xml
+      - name: Download EPG File
+        run: wget http://epg.51zmt.top:8000/e.xml -O output/epg.xml
 
-      - name: Generate timestamp
-        id: timestamp
-        run: echo "time=$(date -u +'%Y%m%d_%H%M%S')" >> "$GITHUB_ENV"
-
-      - name: Check and rotate files
+      - name: Calculate SHA-256 hash of output/epg.xml
+        id: calculate_hash
         run: |
-          # 进入 output 目录
-          cd output
+          echo "hash=$(sha256sum output/epg.xml | awk '{print $1}')" >> "$GITHUB_ENV"
 
-          # 获取所有 epg_*.xml 文件，按文件名排序（时间戳格式 yyyymmdd_hhmmss）
-          files=( $(ls -1 epg_*.xml 2>/dev/null | sort) )
-          latest_file=""
-          if [ ${#files[@]} -gt 0 ]; then
-            latest_file="${files[-1]}"
+      - name: Get previous SHA-256 hash from last commit
+        id: get_previous_hash
+        run: |
+          if [ -f output/epg.xml ]; then
+            echo "previous_hash=$(git show HEAD:output/epg.xml | sha256sum | awk '{print $1}')" >> "$GITHUB_ENV"
+          else
+            echo "previous_hash=none" >> "$GITHUB_ENV"
           fi
 
-          # 比较新下载的文件与最新保留的文件内容是否相同
-          if [ -n "$latest_file" ] && cmp -s "/tmp/epg.xml" "$latest_file"; then
-            echo "No changes detected, skipping commit."
-            exit 0
+      - name: Compare hashes and update if different
+        run: |
+          if [ "${{ env.hash }}" != "${{ env.previous_hash }}" ]; then
+            git add output/epg.xml
+            git commit -m "Auto-update epg files."
+            git push origin main
+          else
+            echo "No changes detected in output/epg.xml, skipping commit."
           fi
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
-          # 生成带时间戳的新文件名
-          new_file="epg_${{ env.time }}.xml"
-          cp "/tmp/epg.xml" "$new_file"
+      - name: Delete old workflow runs (keep latest 5)
+        if: github.ref == 'refs/heads/main'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const { owner, repo } = context.repo;
+            const workflowId = context.workflow;
 
-          # 保留最近5个文件（按文件名排序）
-          all_files=( $(ls -1 epg_*.xml 2>/dev/null | sort) )
-          if [ ${#all_files[@]} -gt 5 ]; then
-            remove_count=$(( ${#all_files[@]} - 5 ))
-            for ((i=0; i<remove_count; i++)); do
-              rm -f "${all_files[i]}"
-            done
-          fi
+            // 获取当前工作流所有已完成的运行记录
+            const runs = await github.paginate(
+              github.rest.actions.listWorkflowRuns, {
+                owner,
+                repo,
+                workflow_id: workflowId,
+                status: 'completed',
+                per_page: 100
+              }
+            );
 
-          # 返回上层目录
-          cd ..
+            // 按创建时间降序排序（最新的在前）
+            runs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-          # 提交所有更改（新增和删除的文件）
-          git add output/
-          git commit -m "Auto-update EPG: add $new_file, keep latest 5"
-          git push origin main
+            const keep = 5;
+            for (const run of runs.slice(keep)) {
+              console.log(`Deleting run ${run.id} created at ${run.created_at}`);
+              await github.rest.actions.deleteWorkflowRun({
+                owner,
+                repo,
+                run_id: run.id
+              });
+            }
