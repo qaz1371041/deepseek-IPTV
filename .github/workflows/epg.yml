@@ -13,7 +13,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4   # 升级到 v4，支持 Node.js 24
+      - uses: actions/checkout@v5   # 升级到 v5，支持 Node.js 24
 
       - name: Set up Git user
         run: |
@@ -54,7 +54,7 @@ jobs:
 
       - name: Delete old workflow runs (keep latest 5)
         if: github.ref == 'refs/heads/main'
-        uses: actions/github-script@v8   # 升级到 v8，支持 Node.js 24
+        uses: actions/github-script@v8   # 已支持 Node.js 24
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
           script: |
