@@ -5,7 +5,7 @@ ip_version_priority = "ipv4"
 
 # 直播源URL列表
 source_urls = [
-“http://mytveo.hxfkof.ggff.net",
+"http://mytveo.hxfkof.ggff.net",
 "https://raw.githubusercontent.com/q1017673817/iptvz/main/组播_湖北电信.txt",
 "https://raw.githubusercontent.com/q1017673817/iptvz/refs/heads/main/zubo.txt",
 "https://raw.githubusercontent.com/jn950/live/refs/heads/main/tv/pllive.txt",
