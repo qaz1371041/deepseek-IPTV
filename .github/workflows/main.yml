@@ -1,124 +1,41 @@
-name: Daily Update
+name: 直播源自动检测与更新
 
 on:
   schedule:
-    # 每天北京时间 6:00 触发（UTC 22:00）
-    - cron: '0 22 * * *'
-  workflow_dispatch:  # 允许手动触发
+    # 每天北京时间早上 6:00 和下午 18:00 自动运行 (UTC 时间 22:00 和 10:00)
+    - cron: '0 22,10 * * *'
+  workflow_dispatch: # 允许手动触发
 
 jobs:
-  run_script:
+  check-and-update:
     runs-on: ubuntu-latest
-    # 添加必要的权限：允许删除运行记录
-    permissions:
-      actions: write
-      contents: write
-
+    
     steps:
-    - name: Checkout repository
-      uses: actions/checkout@v5   # 升级到 v5，支持 Node.js 24
-
-    - name: Set up Python
-      uses: actions/setup-python@v5   # 升级到 v5，支持 Node.js 24
-      with:
-        python-version: '3.10'
-
-    - name: Cache dependencies
-      uses: actions/cache@v4   # 当前最新 v4 已兼容 Node.js 24，无需改动
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
-        restore-keys: |
-          ${{ runner.os }}-pip-
-
-    - name: Install system dependencies
+    - name: 检出代码
+      uses: actions/checkout@v4
+      
+    - name: 安装 FFmpeg (用于精准检测画质和可播放性)
       run: |
         sudo apt-get update
         sudo apt-get install -y ffmpeg
-
-    - name: Install Python dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install requests aiohttp
-
-    - name: Run Python script
-      run: |
-        python main.py
-
-    - name: Commit and push if changed
-      run: |
-        git config --local user.email "github-actions[bot]@users.noreply.github.com"
-        git config --local user.name "github-actions[bot]"
-        git add -A
-        if ! git diff --staged --quiet; then
-          git commit -m "Auto-update live files"
-          git pull --rebase
-          git push
-        fi
-
-    # 清理旧运行记录，仅保留最近5条
-    - name: Cleanup old workflow runs (keep only 5)
-      if: always()  # 即使前置步骤失败也执行清理
-      uses: actions/github-script@v8   # 升级到 v8，支持 Node.js 24
+        
+    - name: 设置 Python 环境
+      uses: actions/setup-python@v5
       with:
-        script: |
-          const owner = context.repo.owner;
-          const repo = context.repo.repo;
-          const current_run_id = context.runId;
-
-          // 从 GITHUB_WORKFLOW_REF 解析当前工作流文件名
-          const workflowRef = process.env.GITHUB_WORKFLOW_REF;
-          let workflow_id;
-          if (workflowRef) {
-            const match = workflowRef.match(/\.github\/workflows\/(.+?)@/);
-            if (match) {
-              workflow_id = match[1];
-            }
-          }
-          // 降级：如果解析失败，使用工作流名称（可能无效，但作为备选）
-          if (!workflow_id) {
-            workflow_id = context.workflow;
-          }
-
-          console.log(`Using workflow_id: ${workflow_id}`);
-
-          // 分页获取所有运行记录
-          let runs = [];
-          let page = 1;
-          const per_page = 100;
-          let response;
-
-          do {
-            response = await github.rest.actions.listWorkflowRuns({
-              owner,
-              repo,
-              workflow_id,
-              per_page,
-              page
-            });
-            runs = runs.concat(response.data.workflow_runs);
-            page++;
-          } while (response.data.workflow_runs.length === per_page);
-
-          // 按创建时间降序排序（最新的在前）
-          runs.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-
-          // 保留前5条，删除其余
-          const runsToDelete = runs.slice(5);
-          console.log(`Total runs: ${runs.length}, keeping 5, deleting ${runsToDelete.length} runs.`);
-
-          for (const run of runsToDelete) {
-            if (run.id === current_run_id) {
-              console.log(`Skipping current run ${run.id}`);
-              continue;
-            }
-            console.log(`Deleting run ${run.id} from ${run.created_at}`);
-            await github.rest.actions.deleteWorkflowRun({
-              owner,
-              repo,
-              run_id: run.id
-            });
-          }
-
-    env:
-      TZ: Asia/Shanghai  # 设置时区为上海
+        python-version: '3.10'
+        
+    - name: 安装 Python 依赖
+      run: |
+        pip install -r requirements.txt
+        
+    - name: 运行直播源检测脚本
+      run: |
+        python check_tv.py
+        
+    - name: 提交并推送更新
+      run: |
+        git config --local user.email "action@github.com"
+        git config --local user.name "GitHub Action"
+        git add live.txt live.m3u
+        git commit -m "🚀 自动更新: 过滤720P+源并按速度排序" || echo "没有需要更新的内容"
+        git push
