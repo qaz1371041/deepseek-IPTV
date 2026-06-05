@@ -19,7 +19,12 @@ source_urls = [
 "https://raw.githubusercontent.com/alantang1977/iptv-auto/refs/heads/main/my.txt",
 "https://cloud.7so.top/f/xv80ux/天浪.txt",
 "https://raw.githubusercontent.com/Jsnzkpg/Jsnzkpg/Jsnzkpg/Jsnzkpg1",
-
+"https://api.xiaofengtv.com/tvboox/zhibo/iptv_channels.txt",
+"http://cms.supertv01.com/zhibo/iptv_channels.txt",
+"https://l.gmbbk.com/upload/18281828.txt",
+"http://rihou.cc:567/%E4%BA%91%E7%9B%98%E6%8C%82%E8%BD%BD/gggg.nzk",
+"http://38.75.136.137:88/api/tvlist.php",
+"https://cnb.cool/fgvss/zbds/-/git/raw/main/zbtvupan.txt",
 "https://raw.githubusercontent.com/vbskycn/iptv/master/tv/iptv4.txt",
 "https://raw.githubusercontent.com/YueChan/Live/main/APTV.m3u",
 "https://raw.githubusercontent.com/suxuang/myIPTV/main/ipv4.m3u",
