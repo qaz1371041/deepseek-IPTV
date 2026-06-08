@@ -1,41 +1,68 @@
-name: 直播源自动检测与更新
+name: Daily Update
 
 on:
   schedule:
-    # 每天北京时间早上 6:00 和下午 18:00 自动运行 (UTC 时间 22:00 和 10:00)
-    - cron: '0 22,10 * * *'
-  workflow_dispatch: # 允许手动触发
+    - cron: '0 22 * * *'  # 北京时间每天 06:00（UTC 22:00）
+  workflow_dispatch:
 
 jobs:
-  check-and-update:
+  run_script:
     runs-on: ubuntu-latest
-    
+
     steps:
-    - name: 检出代码
-      uses: actions/checkout@v4
-      
-    - name: 安装 FFmpeg (用于精准检测画质和可播放性)
+    - name: Checkout repository
+      uses: actions/checkout@v3
+
+    - name: Set up Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.10'
+
+    - name: Cache dependencies
+      uses: actions/cache@v4
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
+        restore-keys: |
+          ${{ runner.os }}-pip-
+
+    - name: Install system dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y ffmpeg
-        
-    - name: 设置 Python 环境
-      uses: actions/setup-python@v5
-      with:
-        python-version: '3.10'
-        
-    - name: 安装 Python 依赖
+
+    - name: Install Python dependencies
       run: |
-        pip install -r requirements.txt
-        
-    - name: 运行直播源检测脚本
+        python -m pip install --upgrade pip
+        pip install requests aiohttp
+
+    - name: Run Python script
       run: |
-        python check_tv.py
-        
-    - name: 提交并推送更新
+        python main.py
+
+    - name: Commit and push if changed
       run: |
-        git config --local user.email "action@github.com"
-        git config --local user.name "GitHub Action"
-        git add live.txt live.m3u
-        git commit -m "🚀 自动更新: 过滤720P+源并按速度排序" || echo "没有需要更新的内容"
-        git push
+        git config --local user.email "github-actions[bot]@users.noreply.github.com"
+        git config --local user.name "github-actions[bot]"
+        git add -A
+        if ! git diff --staged --quiet; then
+          git commit -m "Auto-update live files"
+          git pull --rebase
+          git push
+        fi
+
+    env:
+      TZ: Asia/Shanghai
+
+  cleanup:
+    runs-on: ubuntu-latest
+    needs: run_script
+    permissions:
+      actions: write
+      contents: read
+    steps:
+      - name: Delete old workflow runs (keep latest 5)
+        uses: Mattraks/delete-workflow-runs@v2
+        with:
+          retain_days: 0
+          keep_minimum_runs: 5
