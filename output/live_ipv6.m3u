@@ -700,19 +700,19 @@ http://[2409:8087:5e01:34::21]:6610/ZTE_CMS/00000001000000060000000000000175/ind
 #EXTINF:-1 tvg-id="47" tvg-name="黑龙江卫视" tvg-logo="./pic/logos黑龙江卫视.png" group-title="📡卫视频道",黑龙江卫视
 http://[2409:8087:5e01:34::20]:6610/ZTE_CMS/00000001000000060000000000000175/index.m3u8?key=tvbox6_com$IPV6•线路47
 #EXTINF:-1 tvg-id="48" tvg-name="黑龙江卫视" tvg-logo="./pic/logos黑龙江卫视.png" group-title="📡卫视频道",黑龙江卫视
-http://[2409:8087:1a01:df::4077]:80/ottrrs.hl.chinamobile.com/PLTV/88888888/224/3221226327/index.m3u8$IPV6•线路48
+http://[2409:8087:4c0a:22:1::11]:6410/170000001115/UmaiCHAN181356BESTVSMGSMG/index.m3u8?m3u8_level=2$IPV6•线路48
 #EXTINF:-1 tvg-id="49" tvg-name="黑龙江卫视" tvg-logo="./pic/logos黑龙江卫视.png" group-title="📡卫视频道",黑龙江卫视
-http://[2409:8087:4c0a:22:1::11]:6410/170000001115/UmaiCHAN181356BESTVSMGSMG/index.m3u8?m3u8_level=2$IPV6•线路49
+http://[2409:8087:74f0:22::6]:6410/270000001128/9900000521/index.m3u8?channel-id=newtv&livemode=4&Contentid=9900000521$IPV6•线路49
 #EXTINF:-1 tvg-id="50" tvg-name="黑龙江卫视" tvg-logo="./pic/logos黑龙江卫视.png" group-title="📡卫视频道",黑龙江卫视
-http://[2409:8087:74f0:22::6]:6410/270000001128/9900000521/index.m3u8?channel-id=newtv&livemode=4&Contentid=9900000521$IPV6•线路50
+http://[2409:8087:1a01:df::4077]/ottrrs.hl.chinamobile.com/PLTV/88888888/224/3221225799/index.m3u8$IPV6•线路50
 #EXTINF:-1 tvg-id="51" tvg-name="黑龙江卫视" tvg-logo="./pic/logos黑龙江卫视.png" group-title="📡卫视频道",黑龙江卫视
-http://[2409:8087:1a01:df::4077]/ottrrs.hl.chinamobile.com/PLTV/88888888/224/3221225799/index.m3u8$IPV6•线路51
+http://[2409:8087:1a01:df::7005]/ottrrs.hl.chinamobile.com/PLTV/88888888/224/3221226327/index.m3u8$IPV6•线路51
 #EXTINF:-1 tvg-id="52" tvg-name="黑龙江卫视" tvg-logo="./pic/logos黑龙江卫视.png" group-title="📡卫视频道",黑龙江卫视
-http://[2409:8087:1a01:df::7005]/ottrrs.hl.chinamobile.com/PLTV/88888888/224/3221226327/index.m3u8$IPV6•线路52
+http://[2409:8087:1a01:df::7005]:80/ottrrs.hl.chinamobile.com/PLTV/88888888/224/3221226327/index.m3u8$IPV6•线路52
 #EXTINF:-1 tvg-id="53" tvg-name="黑龙江卫视" tvg-logo="./pic/logos黑龙江卫视.png" group-title="📡卫视频道",黑龙江卫视
-http://[2409:8087:1a01:df::7005]:80/ottrrs.hl.chinamobile.com/PLTV/88888888/224/3221226327/index.m3u8$IPV6•线路53
+http://[2409:8087:5e00:24::1e]:6060/200000001898/460000089800010056/1.m3u8$IPV6•线路53
 #EXTINF:-1 tvg-id="54" tvg-name="黑龙江卫视" tvg-logo="./pic/logos黑龙江卫视.png" group-title="📡卫视频道",黑龙江卫视
-http://[2409:8087:5e00:24::1e]:6060/200000001898/460000089800010056/1.m3u8$IPV6•线路54
+http://[2409:8087:1a01:df::4077]:80/ottrrs.hl.chinamobile.com/PLTV/88888888/224/3221226327/index.m3u8$IPV6•线路54
 #EXTINF:-1 tvg-id="1" tvg-name="安徽卫视" tvg-logo="./pic/logos安徽卫视.png" group-title="📡卫视频道",安徽卫视
 http://[2409:8087:8:21::18]:6610/otttv.bj.chinamobile.com/PLTV/88888888/224/3221226943/1.m3u8?GuardEncType=2&accountinfo=%7E%7EV2.0%7E0QmKQ_slRCwvVVUUfxPVbw%7EtP4-l0lmSfjwLWEfK_el1vH_mv-s1zo4AQJwdedaVwG9xkuFTDg8J26cwOrNJzn20BErrHdLhuZ9EzLUCD3PMW-OMx4MGteHV2vLeW6BqoY%2CEND$IPV6•线路1
 #EXTINF:-1 tvg-id="2" tvg-name="安徽卫视" tvg-logo="./pic/logos安徽卫视.png" group-title="📡卫视频道",安徽卫视
