@@ -2473,6 +2473,12 @@ http://[2409:8087:1a0b:df::4014]:80/ottrrs.hl.chinamobile.com/PLTV/88888888/224/
 http://[2409:8087:1a0b:df::4014]:80/ottrrs.hl.chinamobile.com/TVOD/88888888/224/3221225743/index.m3u8$IPV6•线路6
 #EXTINF:-1 tvg-id="7" tvg-name="黑莓电影" tvg-logo="./pic/logos黑莓电影.png" group-title="🎬电影频道",黑莓电影
 http://[2409:8087:2001:20:2800:0:df6e:eb08]/ott.mobaibox.com/PLTV/3/224/3221227520/index.m3u8$IPV6•线路7
+#EXTINF:-1 tvg-id="1" tvg-name="体育" tvg-logo="./pic/logos体育.png" group-title="🏍咪咕体育",体育
+http://[2409:8087:5e08:24::11]:6610/000000001000/2000000004000000060/index.m3u8?stbId=3&livemode=1&HlsProfileId=&channel-id=hnbblive&Contentid=2000000004000000060&IASHttpSessionId=OTT19019320240419154124000281$IPV6•线路1
+#EXTINF:-1 tvg-id="2" tvg-name="体育" tvg-logo="./pic/logos体育.png" group-title="🏍咪咕体育",体育
+http://[2409:8087:5e08:24::17]:6610/000000001000/2000000004000000060/index.m3u8?stbId=3&livemode=1&HlsProfileId=&channel-id=hnbblive&Contentid=2000000004000000060&IASHttpSessionId=OTT19019320240419154124000281$IPV6•线路2
+#EXTINF:-1 tvg-id="3" tvg-name="体育" tvg-logo="./pic/logos体育.png" group-title="🏍咪咕体育",体育
+http://[2409:8087:5e08:24::12]:6610/000000001000/2000000004000000000/index.m3u8?stbId=3&livemode=1&HlsProfileId=&channel-id=hnbblive&Contentid=2000000004000000060$IPV6•线路3
 #EXTINF:-1 tvg-id="1" tvg-name="CCTV-5" tvg-logo="./pic/logosCCTV-5.png" group-title="🏀体育频道",CCTV-5
 http://[2409:8087:3869:8021:1001::e5]:6610/PLTV/88888888/224/3221225633/2/index.m3u8$IPV6•线路1
 #EXTINF:-1 tvg-id="2" tvg-name="CCTV-5" tvg-logo="./pic/logosCCTV-5.png" group-title="🏀体育频道",CCTV-5
@@ -2591,11 +2597,5 @@ http://[2409:8087:1a01:df::4077]/ottrrs.hl.chinamobile.com/PLTV/88888888/8/32212
 http://[2409:8087:1a01:df::7005]/ottrrs.hl.chinamobile.com/PLTV/88888888/224/3221225603/index.m3u8$IPV6•线路25
 #EXTINF:-1 tvg-id="26" tvg-name="CCTV-5+" tvg-logo="./pic/logosCCTV-5+.png" group-title="🏀体育频道",CCTV-5+
 http://[2409:8087:1a01:df::7005]:80/ottrrs.hl.chinamobile.com/PLTV/88888888/224/3221225603/index.m3u8$IPV6•线路26
-#EXTINF:-1 tvg-id="1" tvg-name="爱体育" tvg-logo="./pic/logos爱体育.png" group-title="🏀体育频道",爱体育
-http://[2409:8087:5e08:24::11]:6610/000000001000/2000000004000000060/index.m3u8?stbId=3&livemode=1&HlsProfileId=&channel-id=hnbblive&Contentid=2000000004000000060&IASHttpSessionId=OTT19019320240419154124000281$IPV6•线路1
-#EXTINF:-1 tvg-id="2" tvg-name="爱体育" tvg-logo="./pic/logos爱体育.png" group-title="🏀体育频道",爱体育
-http://[2409:8087:5e08:24::17]:6610/000000001000/2000000004000000060/index.m3u8?stbId=3&livemode=1&HlsProfileId=&channel-id=hnbblive&Contentid=2000000004000000060&IASHttpSessionId=OTT19019320240419154124000281$IPV6•线路2
-#EXTINF:-1 tvg-id="3" tvg-name="爱体育" tvg-logo="./pic/logos爱体育.png" group-title="🏀体育频道",爱体育
-http://[2409:8087:5e08:24::12]:6610/000000001000/2000000004000000000/index.m3u8?stbId=3&livemode=1&HlsProfileId=&channel-id=hnbblive&Contentid=2000000004000000060$IPV6•线路3
 #EXTINF:-1 tvg-id="1" tvg-name="超级体育" tvg-logo="./pic/logos超级体育.png" group-title="🏀体育频道",超级体育
 http://[2409:8087:1a01:df::7005]:80/ottrrs.hl.chinamobile.com/PLTV/88888888/224/3221225715/index.m3u8$IPV6
