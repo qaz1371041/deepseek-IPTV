@@ -6,17 +6,16 @@ import os
 from dataclasses import dataclass
 from typing import List, Tuple, Optional
 
-# 配置类
+# 配置类（已优化速度）
 class Config:
-    CONCURRENT_LIMIT = 30      # 并发限制（提高测速效率）
-    TIMEOUT = 8                # 超时时间（秒）
-    RETRY_TIMES = 2            # 重试次数
+    CONCURRENT_LIMIT = 80      # 提高并发数
+    TIMEOUT = 5                # 缩短超时时间
+    RETRY_TIMES = 1            # 减少重试次数
     OUTPUT_DIR = "output"
     LOG_FILE = "output/speed_test.log"
 
 config = Config()
 
-# 日志配置
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
@@ -41,7 +40,7 @@ class SpeedTester:
         self.session = None
     
     async def __aenter__(self):
-        timeout = aiohttp.ClientTimeout(total=config.TIMEOUT, connect=5)
+        timeout = aiohttp.ClientTimeout(total=config.TIMEOUT, connect=3)
         self.session = aiohttp.ClientSession(timeout=timeout)
         return self
     
@@ -49,7 +48,7 @@ class SpeedTester:
         if self.session:
             await self.session.close()
     
-    async def measure_latency(self, url: str, retry_times: int = 2) -> SpeedTestResult:
+    async def measure_latency(self, url: str, retry_times: int = 1) -> SpeedTestResult:
         """测量单个URL的延迟"""
         result = SpeedTestResult(url=url, test_time=time.time())
         
@@ -58,25 +57,24 @@ class SpeedTester:
                 start_time = time.time()
                 async with self.session.get(url, headers={"User-Agent": "Mozilla/5.0"}) as response:
                     if response.status == 200:
-                        latency = (time.time() - start_time) * 1000  # 转换为毫秒
+                        latency = (time.time() - start_time) * 1000
                         result.latency = latency
                         result.success = True
-                        logger.debug(f"URL: {url} 测试成功，延迟: {latency:.2f}ms")
+                        logger.debug(f"URL: {url} 成功，延迟: {latency:.2f}ms")
                         break
                     else:
-                        result.error = f"HTTP状态码: {response.status}"
+                        result.error = f"HTTP {response.status}"
             except asyncio.TimeoutError:
                 result.error = "超时"
             except Exception as e:
                 result.error = str(e)
                 logger.warning(f"URL: {url} 尝试 {attempt+1}/{retry_times} 失败: {e}")
             
-            await asyncio.sleep(0.5)  # 重试前等待
+            await asyncio.sleep(0.5)
         
         return result
     
     async def batch_speed_test(self, urls: List[str]) -> List[SpeedTestResult]:
-        """批量测速（带并发控制）"""
         if not urls:
             return []
         
@@ -91,5 +89,4 @@ class SpeedTester:
         tasks = [worker(url) for url in urls]
         await asyncio.gather(*tasks)
         
-        # 按延迟排序（升序），延迟为None的放在最后
         return sorted(results, key=lambda x: x.latency if x.latency is not None else float('inf'))
