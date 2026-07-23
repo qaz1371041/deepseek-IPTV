@@ -158,9 +158,8 @@ def is_video_source(url):
 def get_resolution_from_url(url):
     """
     从URL中尝试提取分辨率信息
-    返回: (width, height) 或 None
+    返回: (width, height) 或 (None, None)
     """
-    # 尝试从URL中匹配分辨率模式，如 1920x1080, 1280x720, 720p, 1080p 等
     patterns = [
         r'(\d{3,4})[xX](\d{3,4})',          # 1920x1080
         r'(\d{3,4})[pP]',                   # 720p, 1080p
@@ -172,34 +171,33 @@ def get_resolution_from_url(url):
             if 'x' in pattern or 'X' in pattern:
                 w = int(match.group(1))
                 h = int(match.group(2))
-                if w >= 1280 and h >= 720:
-                    return (w, h)
+                return (w, h)
             else:
                 val = int(match.group(1))
-                if val >= 720:
-                    return (val, None)
-    return None
+                return (val, None)
+    return (None, None)
 
 def is_resolution_below_720p(url):
     """
     判断视频源分辨率是否低于720P
-    返回: True 表示低于720P，需要过滤
+    返回: True 表示低于720P，需要过滤；False 表示保留
     """
     # 视频源不过滤
     if is_video_source(url):
         return False
     
-    resolution = get_resolution_from_url(url)
-    if resolution is None:
-        # 无法判断分辨率，默认保留（不过滤）
+    w, h = get_resolution_from_url(url)
+    
+    # 无法提取分辨率 → 默认保留（不过滤）
+    if w is None and h is None:
         return False
     
-    if len(resolution) == 2:
-        w, h = resolution
-        return w < 1280 or h < 720
-    else:
-        val = resolution[0]
-        return val < 720
+    # 如果只提取到单值（如 720p），则按数值判断
+    if h is None:
+        return w < 720  # 数值小于720视为低分辨率
+    
+    # 提取到宽高
+    return w < 1280 or h < 720
 
 async def speed_test_urls(urls, channel_name):
     """对一组URL进行测速，返回排序后的结果"""
